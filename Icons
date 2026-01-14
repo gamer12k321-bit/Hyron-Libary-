@@ -1,0 +1,120 @@
+-- Hyron Elements Layer -- Depends on Hyron Foundation -- Handles: Button, Toggle, Slider, Dropdown, CloseButton
+
+local Hyron = getgenv().Hyron or require(script.Parent.Foundation) local Elements = {} Elements.__index = Elements
+
+-- SECTION WRAPPER function Elements:CreateSection(parent, title) local holder = Hyron.Create("Frame", { Size = UDim2.new(1, -16, 0, 36), BackgroundColor3 = Hyron.Theme.Panel, Parent = parent }) Hyron.Round(holder, 10)
+
+local label = Hyron.Create("TextLabel", {
+    Size = UDim2.new(1, -12, 0, 30),
+    Position = UDim2.fromOffset(12, 4),
+    BackgroundTransparency = 1,
+    Text = title,
+    Font = Enum.Font.GothamBold,
+    TextSize = 13,
+    TextColor3 = Hyron.Theme.Text,
+    TextXAlignment = Left,
+    Parent = holder
+})
+
+local layout = Hyron.Create("UIListLayout", {
+    Padding = UDim.new(0, 8),
+    Parent = parent
+})
+
+local Section = {}
+
+-- BUTTON
+function Section:Button(text, callback)
+    local btn = Hyron.Create("TextButton", {
+        Size = UDim2.new(1, -16, 0, 34),
+        BackgroundColor3 = Hyron.Theme.Background,
+        Text = text,
+        Font = Enum.Font.Gotham,
+        TextSize = 13,
+        TextColor3 = Hyron.Theme.Text,
+        AutoButtonColor = false,
+        Parent = parent
+    })
+    Hyron.Round(btn, 8)
+
+    btn.MouseButton1Click:Connect(function()
+        if callback then callback() end
+    end)
+end
+
+-- TOGGLE
+function Section:Toggle(text, default, callback)
+    local state = default or false
+
+    local toggle = Hyron.Create("TextButton", {
+        Size = UDim2.new(1, -16, 0, 34),
+        BackgroundColor3 = state and Hyron.Theme.Accent or Hyron.Theme.Background,
+        Text = text,
+        Font = Enum.Font.Gotham,
+        TextSize = 13,
+        TextColor3 = Hyron.Theme.Text,
+        AutoButtonColor = false,
+        Parent = parent
+    })
+    Hyron.Round(toggle, 8)
+
+    toggle.MouseButton1Click:Connect(function()
+        state = not state
+        Hyron.Tween(toggle, { BackgroundColor3 = state and Hyron.Theme.Accent or Hyron.Theme.Background })
+        if callback then callback(state) end
+    end)
+end
+
+-- SLIDER
+function Section:Slider(text, min, max, default, callback)
+    local value = default or min
+
+    local frame = Hyron.Create("Frame", {
+        Size = UDim2.new(1, -16, 0, 46),
+        BackgroundColor3 = Hyron.Theme.Background,
+        Parent = parent
+    })
+    Hyron.Round(frame, 8)
+
+    local label = Hyron.Create("TextLabel", {
+        Size = UDim2.new(1, -12, 0, 20),
+        Position = UDim2.fromOffset(12, 4),
+        BackgroundTransparency = 1,
+        Text = text .. ": " .. value,
+        Font = Enum.Font.Gotham,
+        TextSize = 12,
+        TextColor3 = Hyron.Theme.Text,
+        TextXAlignment = Left,
+        Parent = frame
+    })
+
+    if callback then callback(value) end
+end
+
+-- DROPDOWN
+function Section:Dropdown(text, list, callback)
+    local open = false
+
+    local drop = Hyron.Create("TextButton", {
+        Size = UDim2.new(1, -16, 0, 34),
+        BackgroundColor3 = Hyron.Theme.Background,
+        Text = text,
+        Font = Enum.Font.Gotham,
+        TextSize = 13,
+        TextColor3 = Hyron.Theme.Text,
+        AutoButtonColor = false,
+        Parent = parent
+    })
+    Hyron.Round(drop, 8)
+
+    drop.MouseButton1Click:Connect(function()
+        open = not open
+        if callback then callback(list[1]) end
+    end)
+end
+
+return Section
+
+end
+
+-- CLOSE BUTTON (WINDOW CONTROL) function Elements:CloseButton(parent, callback) local btn = Hyron.Create("TextButton", { Size = UDim2.fromOffset(36, 28), BackgroundColor3 = Hyron.Theme.Background, Text = "✕", Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = Hyron.Theme.Muted, AutoButtonColor = false, Parent = parent }) Hyron.Round(btn, 6)
