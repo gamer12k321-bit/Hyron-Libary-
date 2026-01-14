@@ -1,0 +1,143 @@
+-- Hyron Framework Layer -- Depends on Hyron Foundation -- Handles: Window, Header, Drag, Tabs, Pages, Lucide Icons
+
+local Hyron = getgenv().Hyron or require(script.Parent.Foundation) local Framework = {} Framework.__index = Framework
+
+-- Lucide icon map (text-based fallback) Framework.Icons = { star = "★", monitor = "🖥", close = "✕", minimize = "—", expand = "▢" }
+
+function Framework:CreateWindow(opts) opts = opts or {}
+
+local gui = Hyron.Create("ScreenGui", {
+    Name = "Hyron_Window",
+    ResetOnSpawn = false,
+    Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+})
+
+local main = Hyron.Create("Frame", {
+    Size = opts.Size or UDim2.fromOffset(620, 420),
+    Position = UDim2.fromScale(0.5, 0.5),
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    BackgroundColor3 = Hyron.Theme.Background,
+    BorderSizePixel = 0,
+    Parent = gui
+})
+Hyron.Round(main, 12)
+Hyron.MakeDraggable(main)
+
+-- Header
+local header = Hyron.Create("Frame", {
+    Size = UDim2.new(1, 0, 0, 44),
+    BackgroundColor3 = Hyron.Theme.Panel,
+    Parent = main
+})
+Hyron.Round(header, 12)
+
+local title = Hyron.Create("TextLabel", {
+    Size = UDim2.new(1, -120, 1, 0),
+    Position = UDim2.fromOffset(14, 0),
+    BackgroundTransparency = 1,
+    Text = opts.Title or "Hyron",
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+    TextXAlignment = Left,
+    TextColor3 = Hyron.Theme.Text,
+    Parent = header
+})
+
+-- Header buttons
+local function headerButton(icon, x, callback)
+    local b = Hyron.Create("TextButton", {
+        Size = UDim2.fromOffset(36, 28),
+        Position = UDim2.fromOffset(x, 8),
+        BackgroundColor3 = Hyron.Theme.Background,
+        Text = icon,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        TextColor3 = Hyron.Theme.Muted,
+        AutoButtonColor = false,
+        Parent = header
+    })
+    Hyron.Round(b, 6)
+    b.MouseButton1Click:Connect(callback)
+end
+
+headerButton(Framework.Icons.minimize, main.AbsoluteSize.X - 120, function()
+    main.Visible = false
+end)
+
+headerButton(Framework.Icons.close, main.AbsoluteSize.X - 76, function()
+    gui:Destroy()
+end)
+
+-- Body
+local sidebar = Hyron.Create("Frame", {
+    Size = UDim2.new(0, 170, 1, -44),
+    Position = UDim2.fromOffset(0, 44),
+    BackgroundColor3 = Hyron.Theme.Panel,
+    Parent = main
+})
+
+local tabsLayout = Hyron.Create("UIListLayout", {
+    Padding = UDim.new(0, 6),
+    Parent = sidebar
+})
+
+local pages = Hyron.Create("Frame", {
+    Size = UDim2.new(1, -170, 1, -44),
+    Position = UDim2.fromOffset(170, 44),
+    BackgroundTransparency = 1,
+    Parent = main
+})
+
+local Window = {}
+local current
+
+function Window:Tab(info)
+    local tabBtn = Hyron.Create("TextButton", {
+        Size = UDim2.new(1, -12, 0, 36),
+        Position = UDim2.fromOffset(6, 0),
+        BackgroundColor3 = Hyron.Theme.Background,
+        Text = string.format("%s  %s", Framework.Icons[info.Icon or "star"], info.Title),
+        Font = Enum.Font.Gotham,
+        TextSize = 13,
+        TextColor3 = Hyron.Theme.Text,
+        AutoButtonColor = false,
+        Parent = sidebar
+    })
+    Hyron.Round(tabBtn, 8)
+
+    local page = Hyron.Create("ScrollingFrame", {
+        Size = UDim2.fromScale(1, 1),
+        CanvasSize = UDim2.fromOffset(0, 0),
+        ScrollBarImageTransparency = 1,
+        Visible = false,
+        Parent = pages
+    })
+
+    local layout = Hyron.Create("UIListLayout", {
+        Padding = UDim.new(0, 10),
+        Parent = page
+    })
+
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        page.CanvasSize = UDim2.fromOffset(0, layout.AbsoluteContentSize.Y + 12)
+    end)
+
+    tabBtn.MouseButton1Click:Connect(function()
+        if current then current.Visible = false end
+        current = page
+        page.Visible = true
+    end)
+
+    if not current then
+        current = page
+        page.Visible = true
+    end
+
+    return page
+end
+
+return Window
+
+end
+
+return Framework
