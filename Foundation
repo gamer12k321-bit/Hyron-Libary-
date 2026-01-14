@@ -1,0 +1,65 @@
+-- Hyron GUI Library | FOUNDATION LAYER (Luaau) -- Responsibility: Services, utilities, theming, signals, config -- NO window / tab / element creation logic beyond primitives
+
+local Hyron = {} Hyron.__index = Hyron
+
+-- SERVICES Hyron.Services = { Players = game:GetService("Players"), UserInputService = game:GetService("UserInputService"), TweenService = game:GetService("TweenService"), RunService = game:GetService("RunService"), HttpService = game:GetService("HttpService") }
+
+Hyron.LocalPlayer = Hyron.Services.Players.LocalPlayer
+
+-- UTILITY: Instance creator function Hyron.Create(class, props) local inst = Instance.new(class) for k, v in pairs(props or {}) do inst[k] = v end return inst end
+
+-- UTILITY: Tween wrapper function Hyron.Tween(obj, info, goal) local tween = Hyron.Services.TweenService:Create(obj, info, goal) tween:Play() return tween end
+
+-- UTILITY: Simple signal/event function Hyron.Signal() local bind = Instance.new("BindableEvent") return { Fire = function(, ...) bind:Fire(...) end, Connect = function(, fn) return bind.Event:Connect(fn) end } end
+
+-- THEME SYSTEM Hyron.Themes = {}
+
+Hyron.Themes.Default = { Background = Color3.fromRGB(24,24,24), Panel = Color3.fromRGB(32,32,32), Accent = Color3.fromRGB(90,140,255), Text = Color3.fromRGB(235,235,235), Muted = Color3.fromRGB(160,160,160) }
+
+Hyron.Theme = table.clone(Hyron.Themes.Default)
+
+function Hyron:SetTheme(themeTable) for k, v in pairs(themeTable) do if self.Theme[k] ~= nil then self.Theme[k] = v end end end
+
+function Hyron:RegisterTheme(name, themeTable) self.Themes[name] = themeTable end
+
+function Hyron:ApplyTheme(objectMap) for inst, props in pairs(objectMap) do for prop, themeKey in pairs(props) do inst[prop] = self.Theme[themeKey] end end end
+
+-- CONFIG / STATE STORAGE Hyron.Config = {}
+
+function Hyron:SetFlag(flag, value) self.Config[flag] = value end
+
+function Hyron:GetFlag(flag) return self.Config[flag] end
+
+-- DRAG HELPER (used by Framework) function Hyron.MakeDraggable(frame, dragHandle) local dragging, dragStart, startPos dragHandle = dragHandle or frame
+
+dragHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+dragHandle.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+Hyron.Services.UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+end
+
+-- VERSIONING Hyron.Version = "Foundation-1.0.0"
+
+return Hyron
