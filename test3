@@ -1,0 +1,306 @@
+--// Full Vertical UI Framework (Drag + Close + Minimize + Icons)
+
+local Library = {}
+Library.__index = Library
+
+Library.Gui = nil
+Library.Visible = true
+Library.Minimized = false
+
+--// Services
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+
+--// Utility
+local function create(class, props)
+    local obj = Instance.new(class)
+    for k, v in pairs(props or {}) do
+        obj[k] = v
+    end
+    return obj
+end
+
+--// Icon Mapping (Lucide-style)
+Library.Icons = {
+    rewind = "rbxassetid://4483362458",
+    play   = "rbxassetid://4483362458",
+    pause  = "rbxassetid://4483362458",
+    close  = "rbxassetid://4483362458",
+    minus  = "rbxassetid://4483362458",
+}
+
+--// Visibility Controls
+function Library:SetVisibility(state)
+    self.Visible = state
+    if self.Gui then
+        self.Gui.Enabled = state
+    end
+end
+
+function Library:IsVisible()
+    return self.Visible
+end
+
+function Library:Destroy()
+    if self.Gui then
+        self.Gui:Destroy()
+        self.Gui = nil
+    end
+end
+
+--// Create Window
+function Library:CreateWindow()
+    local Window = {}
+    Window.__index = Window
+    setmetatable(Window, Window)
+
+    -- ScreenGui
+    local gui = create("ScreenGui", {
+        Name = "FullFrameworkUI",
+        ResetOnSpawn = false,
+        Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+    })
+    self.Gui = gui
+
+    -- Main Frame (Exact requested values)
+    local main = create("Frame", {
+        Size = UDim2.new(0, 456, 0, 440),
+        Position = UDim2.new(0.100000001, 416, 0.100000001, 152),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+        BorderSizePixel = 0,
+        Parent = gui
+    })
+
+    create("UICorner", {
+        CornerRadius = UDim.new(0, 10),
+        Parent = main
+    })
+
+    --// Top Bar
+    local topBar = create("Frame", {
+        Size = UDim2.new(1, 0, 0, 36),
+        BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+        BorderSizePixel = 0,
+        Parent = main
+    })
+
+    create("UICorner", {
+        CornerRadius = UDim.new(0, 10),
+        Parent = topBar
+    })
+
+    -- Title
+    create("TextLabel", {
+        Text = "Framework",
+        Size = UDim2.new(1, -80, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
+        BackgroundTransparency = 1,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = topBar
+    })
+
+    -- Minimize Button
+    local minimize = create("TextButton", {
+        Size = UDim2.fromOffset(28, 28),
+        Position = UDim2.new(1, -64, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Text = "–",
+        Font = Enum.Font.GothamBold,
+        TextSize = 18,
+        BackgroundColor3 = Color3.fromRGB(40, 40, 40),
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0,
+        Parent = topBar
+    })
+
+    create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = minimize })
+
+    -- Close Button
+    local close = create("TextButton", {
+        Size = UDim2.fromOffset(28, 28),
+        Position = UDim2.new(1, -32, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Text = "×",
+        Font = Enum.Font.GothamBold,
+        TextSize = 18,
+        BackgroundColor3 = Color3.fromRGB(180, 60, 60),
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0,
+        Parent = topBar
+    })
+
+    create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = close })
+
+    -- Content Holder
+    local content = create("Frame", {
+        Size = UDim2.new(1, -16, 1, -52),
+        Position = UDim2.new(0, 8, 0, 44),
+        BackgroundTransparency = 1,
+        Parent = main
+    })
+
+    local layout = create("UIListLayout", {
+        Padding = UDim.new(0, 8),
+        Parent = content
+    })
+
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        content.Size = UDim2.new(1, -16, 0, layout.AbsoluteContentSize.Y + 8)
+    end)
+
+    --// Dragging
+    do
+        local dragging, dragStart, startPos
+
+        topBar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = main.Position
+            end
+        end)
+
+        UIS.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = input.Position - dragStart
+                main.Position = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+
+        UIS.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+    end
+
+    --// Minimize
+    minimize.MouseButton1Click:Connect(function()
+        Library.Minimized = not Library.Minimized
+        content.Visible = not Library.Minimized
+        main.Size = Library.Minimized
+            and UDim2.new(0, 456, 0, 44)
+            or UDim2.new(0, 456, 0, 440)
+    end)
+
+    --// Close
+    close.MouseButton1Click:Connect(function()
+        Library:Destroy()
+    end)
+
+    --// Tabs
+    function Window:CreateTab(name, icon)
+        local Tab = {}
+        Tab.__index = Tab
+        setmetatable(Tab, Tab)
+
+        local tabFrame = create("Frame", {
+            Size = UDim2.new(1, 0, 0, 0),
+            BackgroundTransparency = 1,
+            Parent = content
+        })
+
+        local tabLayout = create("UIListLayout", {
+            Padding = UDim.new(0, 6),
+            Parent = tabFrame
+        })
+
+        tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            tabFrame.Size = UDim2.new(1, 0, 0, tabLayout.AbsoluteContentSize.Y)
+        end)
+
+        create("TextLabel", {
+            Text = name,
+            Size = UDim2.new(1, 0, 0, 26),
+            BackgroundTransparency = 1,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Font = Enum.Font.GothamBold,
+            TextSize = 14,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = tabFrame
+        })
+
+        function Tab:CreateSection(text)
+            local label = create("TextLabel", {
+                Text = text,
+                Size = UDim2.new(1, 0, 0, 22),
+                BackgroundTransparency = 1,
+                TextColor3 = Color3.fromRGB(200, 200, 200),
+                Font = Enum.Font.Gotham,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = tabFrame
+            })
+
+            return {
+                Set = function(_, t) label.Text = t end
+            }
+        end
+
+        function Tab:CreateDivider()
+            local line = create("Frame", {
+                Size = UDim2.new(1, 0, 0, 1),
+                BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+                BorderSizePixel = 0,
+                Parent = tabFrame
+            })
+
+            return {
+                Set = function(_, v) line.Visible = v end
+            }
+        end
+
+        function Tab:CreateIconButton(text, icon, callback)
+            local button = create("TextButton", {
+                Size = UDim2.new(1, 0, 0, 34),
+                Text = "",
+                BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+                BorderSizePixel = 0,
+                Parent = tabFrame
+            })
+
+            create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = button })
+
+            local img = create("ImageLabel", {
+                Size = UDim2.fromOffset(18, 18),
+                Position = UDim2.new(0, 8, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundTransparency = 1,
+                Image = typeof(icon) == "number" and ("rbxassetid://" .. icon)
+                    or Library.Icons[icon] or "",
+                Parent = button
+            })
+
+            create("TextLabel", {
+                Text = text,
+                Size = UDim2.new(1, -36, 1, 0),
+                Position = UDim2.new(0, 36, 0, 0),
+                BackgroundTransparency = 1,
+                TextColor3 = Color3.fromRGB(230, 230, 230),
+                Font = Enum.Font.Gotham,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = button
+            })
+
+            if callback then
+                button.MouseButton1Click:Connect(callback)
+            end
+        end
+
+        return Tab
+    end
+
+    return Window
+end
+
+return Library
