@@ -1,0 +1,173 @@
+--// Vertical UI Library Framework
+
+local Library = {}
+Library.__index = Library
+
+Library.Gui = nil
+Library.Visible = true
+
+--// Utility
+local function create(class, props)
+    local obj = Instance.new(class)
+    for k, v in pairs(props or {}) do
+        obj[k] = v
+    end
+    return obj
+end
+
+--// Library Controls
+function Library:SetVisibility(state)
+    self.Visible = state
+    if self.Gui then
+        self.Gui.Enabled = state
+    end
+end
+
+function Library:IsVisible()
+    return self.Visible
+end
+
+function Library:Destroy()
+    if self.Gui then
+        self.Gui:Destroy()
+        self.Gui = nil
+    end
+end
+
+--// Create Window
+function Library:CreateWindow(config)
+    local Window = {}
+    Window.__index = Window
+    Window.Tabs = {}
+
+    setmetatable(Window, Window)
+
+    -- ScreenGui
+    local gui = create("ScreenGui", {
+        Name = "VerticalUILibrary",
+        ResetOnSpawn = false,
+        Parent = game:GetService("Players").LocalPlayer.PlayerGui
+    })
+    self.Gui = gui
+
+    -- Main Frame
+    local main = create("Frame", {
+        Size = UDim2.fromScale(0.35, 0.6),
+        Position = UDim2.fromScale(0.5, 0.5),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+        Parent = gui
+    })
+
+    create("UICorner", {
+        CornerRadius = UDim.new(0, 10),
+        Parent = main
+    })
+
+    -- Vertical Layout
+    local layout = create("UIListLayout", {
+        Padding = UDim.new(0, 8),
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        Parent = main
+    })
+
+    -- Auto Resize
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        main.Size = UDim2.new(
+            main.Size.X.Scale,
+            main.Size.X.Offset,
+            0,
+            layout.AbsoluteContentSize.Y + 16
+        )
+    end)
+
+    --// Create Tab
+    function Window:CreateTab(name, icon)
+        local Tab = {}
+        Tab.__index = Tab
+        Tab.Elements = {}
+
+        setmetatable(Tab, Tab)
+
+        -- Tab Container
+        local tabFrame = create("Frame", {
+            Size = UDim2.new(1, -16, 0, 0),
+            BackgroundTransparency = 1,
+            Parent = main
+        })
+
+        local tabLayout = create("UIListLayout", {
+            Padding = UDim.new(0, 6),
+            Parent = tabFrame
+        })
+
+        tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            tabFrame.Size = UDim2.new(1, -16, 0, tabLayout.AbsoluteContentSize.Y)
+        end)
+
+        -- Tab Title
+        create("TextLabel", {
+            Text = name,
+            Size = UDim2.new(1, 0, 0, 28),
+            BackgroundTransparency = 1,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Font = Enum.Font.GothamBold,
+            TextSize = 14,
+            Parent = tabFrame
+        })
+
+        --// Create Section
+        function Tab:CreateSection(text)
+            local Section = {}
+            Section.__index = Section
+
+            setmetatable(Section, Section)
+
+            local label = create("TextLabel", {
+                Text = text,
+                Size = UDim2.new(1, 0, 0, 24),
+                BackgroundTransparency = 1,
+                TextColor3 = Color3.fromRGB(200, 200, 200),
+                Font = Enum.Font.Gotham,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = tabFrame
+            })
+
+            function Section:Set(newText)
+                label.Text = newText
+            end
+
+            return Section
+        end
+
+        --// Create Divider
+        function Tab:CreateDivider()
+            local Divider = {}
+            Divider.__index = Divider
+            Divider.Visible = true
+
+            setmetatable(Divider, Divider)
+
+            local line = create("Frame", {
+                Size = UDim2.new(1, 0, 0, 1),
+                BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+                BorderSizePixel = 0,
+                Parent = tabFrame
+            })
+
+            function Divider:Set(state)
+                self.Visible = state
+                line.Visible = state
+            end
+
+            return Divider
+        end
+
+        return Tab
+    end
+
+    return Window
+end
+
+return Library
